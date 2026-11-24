@@ -26,7 +26,7 @@ Post-quantum hardened remote desktop streaming umbrella monorepo combining a sec
   - Removes STUN/NAT64 probes (`ipv4only.arpa`), disables UPnP and mDNS advertisement, binds the Sunshine Web UI strictly to `127.0.0.1:47990` with CSRF enforcement, and closes `47989/tcp` after pairing.
   - Strict client certificate pinning without plaintext HTTP fallback, UUID/SHA-256 path containment, `0700` staging, and non-synchronizable Keychain secrets on macOS.
 - **Memory-Safe Rust HTTP/TLS Layer (`sds-http-rs`) & Rust Installer (`sds-installer`):**
-  - Replaces legacy C++ `Simple-Web-Server` with a `tokio` + `rustls`/`aws-lc-rs` (`X25519MLKEM768`) + `httparse` backend in the Sunshine feature branch (`feat/rust-http-server-rs`, see [Branch Sync Guide](docs/SYNCING-BRANCHES.md)).
+  - Replaces legacy C++ `Simple-Web-Server` with an in-tree `tokio` + `rustls`/`aws-lc-rs` (`X25519MLKEM768`) + `httparse` backend (`sunshine/third-party/sds-http-rs`, see [Branch Sync Guide](docs/SYNCING-BRANCHES.md)).
 - **High-Fidelity Streaming & Color:**
   - Supports **hardware-packed `YCoCg-R` 4:4:4 over 10-bit `P010` HEVC Main10** (VAAPI on AMD/Intel Linux -> Apple M4 VideoToolbox + Metal unpack, avoiding 4:2:0 subpixel chroma smear) alongside **host GPU/encoder selection** (`<sdsAdapters>`, `<sdsEncoders>`, `software` 4:4:4 fallback) and **dynamic native host resolution** (`XRandR` + rootless `Xorg + dummy` up to `4096x4096`).
 - **Interactive Desktop Features (Opt-In Per Client):**

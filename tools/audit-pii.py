@@ -13,6 +13,11 @@ import sys
 from pathlib import Path
 
 SUBMODULE_PREFIXES = ("sunshine/", "moonlight-qt/", "moonlight-common-c/")
+SUBMODULE_UPSTREAM_BASES = {
+    "sunshine": "de1e671e815c46c00fa21fc074d6fb273b808e3b",
+    "moonlight-qt": "2dc63d1f138557d15b21c051645280a58702da9d",
+    "moonlight-common-c": "94c65fd364d17b223f00a8763c9a5d94a66cb8dd",
+}
 
 
 def _c(*parts: str) -> str:
@@ -161,34 +166,34 @@ def scan_text(label: str, text: str) -> list[str]:
     return findings
 
 
-def scan_git_history(root: Path) -> list[str]:
+def _scan_git_range(repo: Path, rev_range: str, label_prefix: str) -> list[str]:
     findings: list[str] = []
-    has_commits = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "--verify", "HEAD"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    ).returncode == 0
-    if not has_commits:
-        return findings
-
-    authors = run_git(root, ["log", "--all", "--format=%H\t%an\t%ae\t%cn\t%ce"])
-    for idx, row in enumerate(authors.splitlines(), start=1):
-        parts = row.split("\t")
-        if len(parts) != 5:
+    authors = run_git(repo, ["log", rev_range, "--format=%H\t%an\t%ae\t%cn\t%ce\t%s"])
+    for row in authors.splitlines():
+        parts = row.split("\t", 5)
+        if len(parts) < 5:
             continue
-        sha, an, ae, cn, ce = parts
-        for label, val in (("author_name", an), ("author_email", ae), ("committer_name", cn), ("committer_email", ce)):
+        sha, an, ae, cn, ce = parts[:5]
+        subject = parts[5] if len(parts) > 5 else ""
+        tag = f"{label_prefix}{sha[:12]}"
+        for label, val in (
+            ("author_name", an),
+            ("author_email", ae),
+            ("committer_name", cn),
+            ("committer_email", ce),
+            ("commit_subject", subject),
+        ):
             for rule_name, pat in FORBIDDEN_PATTERNS:
                 m = pat.search(val)
                 if m:
-                    findings.append(f"git-metadata:{sha[:12]}:{label}: [{rule_name}] matched {m.group(0)!r} in {val!r}")
+                    findings.append(f"git-metadata:{tag}:{label}: [{rule_name}] matched {m.group(0)!r} in {val!r}")
         if not ae.endswith("@users.noreply.github.com") or (
             ce != ae and ce != "noreply@github.com"
         ):
             # Allow clean GitHub noreply emails (and GitHub Web merge/squash committer email) only
-            findings.append(f"git-metadata:{sha[:12]}: commit email {ae!r}/{ce!r} should use *@users.noreply.github.com")
+            findings.append(f"git-metadata:{tag}: commit email {ae!r}/{ce!r} should use *@users.noreply.github.com")
 
-    diff_text = run_git(root, ["log", "--all", "-p", "--no-color"])
+    diff_text = run_git(repo, ["log", rev_range, "-p", "--no-color"])
     current_commit = "unknown"
     current_file = "unknown"
     for line in diff_text.splitlines():
@@ -202,8 +207,38 @@ def scan_git_history(root: Path) -> list[str]:
                 m = pat.search(content)
                 if m:
                     findings.append(
-                        f"git-diff:{current_commit}:{current_file}: [{rule_name}] matched {m.group(0)!r}"
+                        f"git-diff:{label_prefix}{current_commit}:{current_file}: [{rule_name}] matched {m.group(0)!r}"
                     )
+    return findings
+
+
+def scan_git_history(root: Path) -> list[str]:
+    has_commits = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--verify", "HEAD"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ).returncode == 0
+    if not has_commits:
+        return []
+    return _scan_git_range(root, "--all", "")
+
+
+def scan_submodule_deltas(root: Path) -> list[str]:
+    findings: list[str] = []
+    for sub, base in SUBMODULE_UPSTREAM_BASES.items():
+        sub_dir = root / sub
+        if not (sub_dir / ".git").exists():
+            findings.append(f"submodule:{sub}: not initialized; run git submodule update --init")
+            continue
+        has_base = subprocess.run(
+            ["git", "-C", str(sub_dir), "rev-parse", "--verify", f"{base}^{{commit}}"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode == 0
+        if not has_base:
+            findings.append(f"submodule:{sub}: upstream base commit {base} is missing (shallow clone?)")
+            continue
+        findings.extend(_scan_git_range(sub_dir, f"{base}..HEAD", f"{sub}:"))
     return findings
 
 
@@ -226,6 +261,7 @@ def main() -> int:
     parser.add_argument("--root", default=".", help="Repository root directory")
     parser.add_argument("--include-submodules", action="store_true", help="Also scan initialized submodules")
     parser.add_argument("--check-git-history", action="store_true", help="Scan full git log diff & author metadata")
+    parser.add_argument("--check-submodule-deltas", action="store_true", help="Scan submodule base..HEAD commits & metadata")
     parser.add_argument("--strict", action="store_true", help="Fail if any untracked non-ignored files exist or on any finding")
     args = parser.parse_args()
 
@@ -264,6 +300,8 @@ def main() -> int:
     findings.extend(scan_git_internals(root))
     if args.check_git_history:
         findings.extend(scan_git_history(root))
+    if args.check_submodule_deltas:
+        findings.extend(scan_submodule_deltas(root))
 
     if findings:
         print(f"PII/Security audit FAILED with {len(findings)} finding(s):", file=sys.stderr)

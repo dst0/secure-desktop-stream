@@ -15,7 +15,4 @@ echo "=== Updated submodule commits ==="
 git submodule status
 
 echo "=== Running PII audit ==="
-python3 "$ROOT/tools/audit-pii.py" --strict
-python3 "$ROOT/tools/audit-pii.py" --include-submodules || {
-    echo "WARNING: Submodule working trees still contain legacy host-specific references (see docs/SYNCING-BRANCHES.md)." >&2
-}
+python3 "$ROOT/tools/audit-pii.py" --strict --check-git-history --check-submodule-deltas

@@ -26,7 +26,7 @@ jobs:
           python-version: "3.12"
 
       - name: Audit tracked files and git history for PII/paths
-        run: python3 tools/audit-pii.py --strict --check-git-history
+        run: python3 tools/audit-pii.py --strict --check-git-history --check-submodule-deltas
 
       - name: Run Python test suites
         run: |
