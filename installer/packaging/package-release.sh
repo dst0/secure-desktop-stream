@@ -72,6 +72,7 @@ fi
 revision=$(git -C "$installer_root/.." rev-parse HEAD 2>/dev/null || printf '%040d' 0)
 
 mkdir -p -- "$out_dir"
+out_dir=$(cd -- "$out_dir" && pwd)
 work=$(mktemp -d "${TMPDIR:-/tmp}/sds-package.XXXXXXXX")
 trap 'rm -rf "$work"' EXIT
 
