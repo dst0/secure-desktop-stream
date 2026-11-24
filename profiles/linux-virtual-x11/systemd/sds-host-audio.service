@@ -1,0 +1,28 @@
+[Unit]
+Description=Private audio graph for Secure Desktop Stream (sds-host)
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+NotifyAccess=all
+RuntimeDirectory=sds-host-audio
+RuntimeDirectoryMode=0700
+Environment=SDS_OUTPUT_SINK=sds-host-output
+Environment=XDG_CONFIG_HOME=/opt/secure-desktop-stream-sds-host/audio
+Environment=XDG_STATE_HOME=%h/.local/state/sds-host-audio
+UnsetEnvironment=PIPEWIRE_CONFIG_DIR PIPEWIRE_CONFIG_NAME PIPEWIRE_CONFIG_PREFIX
+UnsetEnvironment=PULSE_SERVER PULSE_RUNTIME_PATH PIPEWIRE_REMOTE PIPEWIRE_RUNTIME_DIR
+UnsetEnvironment=DBUS_SESSION_BUS_ADDRESS
+UMask=0077
+ExecStart=/usr/bin/dbus-run-session -- /opt/secure-desktop-stream-sds-host/audio/start-audio.sh
+Restart=always
+RestartSec=3s
+TimeoutStartSec=20s
+NoNewPrivileges=true
+LockPersonality=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+KillMode=control-group
+
+[Install]
+WantedBy=default.target

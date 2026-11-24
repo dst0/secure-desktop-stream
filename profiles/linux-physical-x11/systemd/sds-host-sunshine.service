@@ -1,0 +1,24 @@
+[Unit]
+Description=Secure Desktop Stream Sunshine (sds-host Physical X11)
+After=pipewire.service pipewire-pulse.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+WorkingDirectory=/opt/secure-desktop-stream-sds-host
+Environment=XDG_CONFIG_HOME=%h/.config/sds-host-sunshine/config
+Environment=XDG_CACHE_HOME=%h/.cache/sds-host-sunshine
+Environment=SUNSHINE_ASSETS_DIR=/opt/secure-desktop-stream-sds-host/assets
+UnsetEnvironment=WAYLAND_DISPLAY WAYLAND_SOCKET DBUS_SESSION_BUS_ADDRESS SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GPG_AGENT_INFO
+EnvironmentFile=%t/sds-host-sunshine.env
+ExecStart=/opt/secure-desktop-stream-sds-host/sunshine %h/.config/sds-host-sunshine/sunshine.conf
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=12s
+UMask=0077
+NoNewPrivileges=true
+LockPersonality=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+InaccessiblePaths=-/run/docker.sock

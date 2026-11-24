@@ -1,0 +1,28 @@
+[Unit]
+Description=Private virtual desktop for Secure Desktop Stream (sds-host)
+StartLimitIntervalSec=0
+Upholds=sds-host-sunshine.service
+
+# NOTE: Intentionally omits NoNewPrivileges=true so interactive sudo inside
+# the virtual desktop works. Sunshine and PipeWire units enforce NoNewPrivileges=true.
+[Service]
+Type=notify
+NotifyAccess=all
+Environment=DISPLAY=:97 XAUTHORITY=%t/sds-host-display/Xauthority
+Environment=SDS_DISPLAY=:97 SDS_INSTANCE=sds-host SDS_RESOLUTION=1920x1080
+Environment=XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=LXQt XDG_MENU_PREFIX=lxqt-
+Environment=GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb QT_QPA_PLATFORMTHEME=lxqt GVFS_DISABLE_FUSE=1 NO_AT_BRIDGE=1
+Environment=XDG_CONFIG_HOME=%h/.config/sds-host-desktop
+Environment=XDG_DATA_HOME=%h/.local/share/sds-host-desktop
+Environment=XDG_CACHE_HOME=%h/.cache/sds-host-desktop
+UnsetEnvironment=WAYLAND_DISPLAY WAYLAND_SOCKET DBUS_SESSION_BUS_ADDRESS SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GPG_AGENT_INFO XDG_SESSION_ID XDG_SEAT XDG_VTNR PULSE_COOKIE
+RuntimeDirectory=sds-host-display
+RuntimeDirectoryMode=0700
+UMask=0077
+ExecStart=/usr/bin/dbus-run-session -- /opt/secure-desktop-stream-sds-host/start-display.sh
+Restart=always
+RestartSec=3s
+TimeoutStartSec=35s
+
+[Install]
+WantedBy=default.target

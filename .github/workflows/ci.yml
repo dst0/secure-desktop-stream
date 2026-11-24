@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pii-audit:
+    name: PII Audit & Python Tooling Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Audit tracked files and git history for PII/paths
+        run: python3 tools/audit-pii.py --strict --check-git-history
+
+      - name: Run Python test suites
+        run: |
+          python3 -m unittest discover -s tests -v
+          python3 -m unittest discover -s tools/builder-sunshine-windows -p 'test_*.py' -v
+
+      - name: Verify shell script syntax
+        run: |
+          set -euo pipefail
+          find . -maxdepth 4 -type f -name '*.sh' \
+            -not -path './sunshine/*' \
+            -not -path './moonlight-qt/*' \
+            -not -path './moonlight-common-c/*' \
+            -not -path './.git/*' \
+            -print0 | while IFS= read -r -d '' s; do
+              echo "Checking $s"
+              shebang=$(head -n 1 "$s" || true)
+              case "$shebang" in
+                "#!/bin/sh"*|"#!/usr/bin/env sh"*)
+                  sh -n "$s"
+                  ;;
+                *)
+                  bash -n "$s"
+                  ;;
+              esac
+            done
+
+  installer-rust:
+    name: Installer Rust & Bootstrap (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux Floem & system dev libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake \
+            libx11-dev libxcursor-dev libxrandr-dev libxi-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libfontconfig1-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo workspace
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: installer
+
+      - name: Format check
+        working-directory: installer
+        run: cargo fmt --check
+
+      - name: Clippy check
+        working-directory: installer
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Cargo tests
+        working-directory: installer
+        run: cargo test --locked --all-targets
+
+      - name: Bootstrapper & static security tests
+        working-directory: installer
+        run: bash tests/test-bootstraps.sh

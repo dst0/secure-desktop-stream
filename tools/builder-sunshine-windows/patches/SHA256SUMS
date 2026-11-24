@@ -1,0 +1,12 @@
+fdf4e90a56fc195a8f9a969af39335f158a29f29d42d33c00d908fc47cf5ad24  gcc/0002-i386-Keep-SEH-enabled-for-Win64-sysv_abi-functions.patch
+e98805ead7d78ee2a92f237894c4b2b7ddc1688e1b517d8c04f28d440202e40f  gcc/0012-Handle-spaces-in-path-for-default-manifest.patch
+fd9bdecb2bbc4796bbc9f00b708dac42ef9e3464a06d6d27e5475cee117de5be  gcc/0014-gcc-9-branch-clone_function_name_1-Retain-any-stdcall-suffix.patch
+e1e05ceee42e6418ca744d29cbe3d9c8af3575044fc7b35c8c698e503d9bc788  gcc/0026-mingw-Honor-with-local-dir-and-with-native-system-he.patch
+70d2504edfb92dbccd224eb917392bf9c53476253cd6d43466173b270027fe96  gcc/0200-function-honour-over-alignment-in-assign_stack_local.patch
+ad71bc58d9ad3927893a0ce443a03c770d4f9ba5ebc8dc6943ed3c59b4823858  gcc/1000-MSYS2-Set-STANDARD_STARTFILE_PREFIX_1-to-lib.patch
+f21f9ab731e9cab8fd4ca8c289497f859ef7004e6fa0507877dc2559ac2071c3  gcc/3001-fix-codeview-crashes.patch
+9945635f4a67712616202f09cbb66cf70df01be168c2c8054c455bb58bf334dd  binutils/2001-ld-option-to-move-default-bases-under-4GB.patch
+3e3c53b0751a6389cd50dcbd7f78b52aaa55113414da01d3415592af18809702  binutils/2003-Revert-Restore-old-behaviour-of-windres-so-that-opti.patch
+5fddd0c6e380955c2d219f173d286bae07ff23ba79afcd15aba6f29ae6dea47d  binutils/2004-ld-Prevent-_tls_used-and-_load_config_used-from-bein.patch
+d8708b5d7acfc18b964c001bdb62d552f785da8fffd2b6709192cb24a71e6331  binutils/2005-Set-alignment-in-_tls_used.patch
+a094660ec95996c00b598429843b7869037732146442af567ada9f539bd40480  binutils/reproducible-import-libraries.patch

@@ -1,0 +1,11 @@
+# Applied in this order (same relative order as MSYS2 mingw-w64-gcc 16.2.0-7 prepare()).
+# Only patches that affect the compiler proper are kept; patches for the Windows-hosted
+# build, Ada, Fortran and target-library configure scripts are not needed here because
+# the target libraries (libgcc, libstdc++, winpthreads) come prebuilt from MSYS2.
+0012-Handle-spaces-in-path-for-default-manifest.patch -p1
+0014-gcc-9-branch-clone_function_name_1-Retain-any-stdcall-suffix.patch -p1
+1000-MSYS2-Set-STANDARD_STARTFILE_PREFIX_1-to-lib.patch -p1
+3001-fix-codeview-crashes.patch -p1
+0002-i386-Keep-SEH-enabled-for-Win64-sysv_abi-functions.patch -p1
+0200-function-honour-over-alignment-in-assign_stack_local.patch -p1
+0026-mingw-Honor-with-local-dir-and-with-native-system-he.patch -p1

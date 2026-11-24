@@ -1,0 +1,7 @@
+# Applied in this order (same relative order as MSYS2 mingw-w64-binutils 2.47-5 prepare()).
+# Windows-host-only patches (unusual-file check, same-inode, nul device) are omitted.
+2001-ld-option-to-move-default-bases-under-4GB.patch -p1
+2003-Revert-Restore-old-behaviour-of-windres-so-that-opti.patch -p1
+2004-ld-Prevent-_tls_used-and-_load_config_used-from-bein.patch -p1
+2005-Set-alignment-in-_tls_used.patch -p1
+reproducible-import-libraries.patch -p2

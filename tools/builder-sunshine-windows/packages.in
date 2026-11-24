@@ -1,0 +1,54 @@
+# MSYS2 UCRT64 packages extracted into the cross sysroot (/opt/ucrt64).
+# Mirrors the "Update Windows dependencies" step of .github/workflows/ci-windows.yml
+# (minus host tools: cmake, doxygen, graphviz, git, nsis -> Linux equivalents are used).
+# Regenerate packages.lock with: ./lock-packages.sh
+
+# target runtime/toolchain files (headers, CRT import libs, libstdc++/libgcc, winpthreads)
+gcc
+crt
+headers
+winpthreads
+libwinpthread
+windows-default-manifest
+
+# Sunshine dependencies (ci-windows.yml)
+boost
+cppwinrt
+curl-winssl
+miniupnpc
+nlohmann-json
+libvpl
+openssl
+opus
+qt6-static
+MinHook
+zlib
+
+# static archives qt6-static links against (its makedepends; linked through pkg-config --static)
+libb2
+brotli
+freetype
+harfbuzz
+libjpeg-turbo
+libpng
+libtiff
+libwebp
+pcre2
+zstd
+vulkan-headers
+
+# never needed in a cross sysroot (Windows host tools pulled in transitively)
+!binutils
+!gmp
+!isl
+!mpc
+!mpfr
+!python
+!python-packaging
+!mpdecimal
+!ncurses
+!sqlite
+!tcl
+!tk
+!tzdata
+!wineditline

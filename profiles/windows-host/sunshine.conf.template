@@ -1,0 +1,12 @@
+# Hardened Secure Desktop Stream Sunshine configuration (Windows Host)
+origin_web_ui_allowed = pc
+lan_encryption_mode = 2
+wan_encryption_mode = 2
+upnp = disabled
+mdns_advertise = disabled
+sds_default_permissions =
+stream_audio = enabled
+clipboard = enabled
+file_transfer = enabled
+file_clipboard = enabled
+mic_passthrough = enabled

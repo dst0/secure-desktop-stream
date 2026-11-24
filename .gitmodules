@@ -1,0 +1,9 @@
+[submodule "sunshine"]
+	path = sunshine
+	url = https://github.com/dst0/Sunshine.git
+[submodule "moonlight-qt"]
+	path = moonlight-qt
+	url = https://github.com/dst0/moonlight-qt.git
+[submodule "moonlight-common-c"]
+	path = moonlight-common-c
+	url = https://github.com/dst0/moonlight-common-c.git

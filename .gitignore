@@ -1,0 +1,9 @@
+build/
+installer/target/
+*.log
+*.tmp
+.DS_Store
+__pycache__/
+.pytest_cache/
+*.pyc
+wt/
