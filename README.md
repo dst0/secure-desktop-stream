@@ -54,20 +54,32 @@ Post-quantum hardened remote desktop streaming umbrella monorepo combining a sec
 
 > **Note on settings:** Runtime streaming preferences (codec, 4:4:4 mode, GPU adapter, encoder, host resolution matching, bitrate, and per-client permissions) live directly in the **Moonlight client** and **Sunshine Web UI** rather than being duplicated in the installer. The installer handles dependency checking/installation, clean builds or verified archive installs, host profiles, firewall scoping, guided PQ pairing, and uninstallation.
 
-### 1. Clone with Submodules
+### 1. Option A — Install Prebuilt Release (Recommended)
+
+#### macOS & Linux
+```bash
+curl -fsSL https://github.com/dst0/secure-desktop-stream/releases/latest/download/get.sh -o get.sh
+bash get.sh --release-base=https://github.com/dst0/secure-desktop-stream/releases/latest/download --auto-deps
+```
+
+#### Windows (PowerShell 5.1 / 7+)
+```powershell
+Invoke-WebRequest -Uri https://github.com/dst0/secure-desktop-stream/releases/latest/download/install-windows.ps1 -OutFile install-windows.ps1
+powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -ReleaseBase https://github.com/dst0/secure-desktop-stream/releases/latest/download -AutoDeps -AllowUnsigned
+```
+
+### 2. Option B — Build From Source Checkout
 
 ```bash
 git clone --recursive https://github.com/dst0/secure-desktop-stream.git
 cd secure-desktop-stream
+bash installer/bootstrap/get.sh --from-source --auto-deps
 ```
 
-### 2. Launch the Installer & Dependency Manager
+On Windows from a checkout:
 
-#### macOS & Linux
-```bash
-# Checks/builds sds-installer from source (or downloads verified release with --release-base)
-# and starts the pure native Rust installer GUI (or TUI over SSH):
-bash installer/bootstrap/get.sh
+```powershell
+powershell -ExecutionPolicy Bypass -File installer\bootstrap\install-windows.ps1 -FromSource -AutoDeps -AllowUnsigned
 ```
 
 Or run the CLI directly after building `sds-installer`:
@@ -83,11 +95,6 @@ cargo build --release --locked
 # Launch the native Rust GUI wizard (RU / EN, tiny-skia software renderer) or headless TUI
 ./target/release/sds-installer gui
 ./target/release/sds-installer tui
-```
-
-#### Windows (PowerShell 5.1 / 7+)
-```powershell
-powershell -ExecutionPolicy Bypass -File installer\bootstrap\install-windows.ps1 -FromSource -AllowUnsigned
 ```
 
 ### 3. Clean Uninstall

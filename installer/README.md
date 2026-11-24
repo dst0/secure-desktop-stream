@@ -31,8 +31,12 @@ A hardened cross-platform **pure native Rust** installer, dependency manager, cr
 ## Quick Usage
 
 ```bash
-# Launch native GUI (desktop) or TUI (SSH / headless TTY)
-bash installer/bootstrap/get.sh
+# Option A: Install verified prebuilt release archive (macOS & Linux)
+curl -fsSL https://github.com/dst0/secure-desktop-stream/releases/latest/download/get.sh -o get.sh
+bash get.sh --release-base=https://github.com/dst0/secure-desktop-stream/releases/latest/download --auto-deps
+
+# Option B: Build from checkout and launch native GUI (desktop) or TUI (SSH / headless TTY)
+bash installer/bootstrap/get.sh --from-source --auto-deps
 
 # Check & install dependencies
 sds-installer deps check --role all
