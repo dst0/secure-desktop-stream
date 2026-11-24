@@ -37,3 +37,6 @@ thiserror = "2.0"
 tokio = { version = "1.44", features = ["macros", "rt-multi-thread", "net", "io-util", "sync", "time", "process", "signal"] }
 tokio-rustls = { version = "0.26", default-features = false }
 zip = { version = "2.4", default-features = false, features = ["deflate"] }
+
+[patch.crates-io]
+objc2 = { path = "patches/objc2-0.4.1" }
