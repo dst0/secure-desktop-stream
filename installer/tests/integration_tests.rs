@@ -180,6 +180,16 @@ async fn spawn_mock_tls_server(mode: MockTlsMode) -> (u16, String, tokio::task::
 }
 
 fn alloc_closed_port() -> u16 {
+    use std::sync::atomic::{AtomicU16, Ordering};
+    // Pick outside macOS/Linux default ephemeral ranges (32768..65535) so concurrent `127.0.0.1:0`
+    // mock listeners never race and bind the same port mid-probe.
+    static NEXT_PORT: AtomicU16 = AtomicU16::new(24100);
+    for _ in 0..500 {
+        let candidate = NEXT_PORT.fetch_add(1, Ordering::Relaxed);
+        if candidate < 31000 && StdTcpListener::bind(("127.0.0.1", candidate)).is_ok() {
+            return candidate;
+        }
+    }
     let l = StdTcpListener::bind("127.0.0.1:0").unwrap();
     l.local_addr().unwrap().port()
 }
@@ -946,4 +956,95 @@ async fn uninstall_refuses_to_traverse_symlinked_ancestors() {
             .any(|p| p.contains("sds-host-sunshine")),
         "expected symlink-backed target to be skipped"
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn probe_remote_cert_lookup_script_handles_zsh_server_pem_and_sunshine_conf() {
+    use sds_installer::probe::{
+        default_remote_cert_lookup_script, explicit_remote_cert_lookup_script,
+    };
+    use std::process::Command;
+
+    let script = default_remote_cert_lookup_script();
+    assert!(script.starts_with("sh -c "));
+    assert!(script.contains("server.pem"));
+    assert!(script.contains("sunshine.conf"));
+
+    let explicit = explicit_remote_cert_lookup_script("/etc/sds/custom-cert.pem");
+    assert!(explicit.starts_with("sh -c "));
+    let explicit_home = explicit_remote_cert_lookup_script("~/certs/host-cert.pem");
+    assert!(explicit_home.starts_with("sh -c "));
+
+    let shells: Vec<&str> = ["sh", "bash", "zsh"]
+        .into_iter()
+        .filter(|sh| Command::new(sh).arg("-c").arg("exit 0").status().is_ok())
+        .collect();
+    assert!(!shells.is_empty());
+
+    // 1. Empty HOME -> exits cleanly with code 42 (not a zsh glob-abort before the loop)
+    let empty_home = tempdir().unwrap();
+    for sh in &shells {
+        let out = Command::new(sh)
+            .arg("-c")
+            .arg(&script)
+            .env("HOME", empty_home.path())
+            .output()
+            .unwrap();
+        assert_eq!(out.status.code(), Some(42), "shell={sh}");
+    }
+
+    // 2. server.pem layout used by custom instances -> finds public server.pem (never cakey.pem)
+    let alt_home = tempdir().unwrap();
+    let alt_dir = alt_home.path().join(".config/sds-alt-sunshine");
+    std::fs::create_dir_all(&alt_dir).unwrap();
+    std::fs::write(alt_dir.join("server.pem"), "HOST-SERVER-CERT").unwrap();
+    std::fs::write(alt_dir.join("cakey.pem"), "PRIVATE-KEY-MUST-NOT-READ").unwrap();
+    for sh in &shells {
+        let out = Command::new(sh)
+            .arg("-c")
+            .arg(&script)
+            .env("HOME", alt_home.path())
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "shell={sh}");
+        assert_eq!(String::from_utf8_lossy(&out.stdout), "HOST-SERVER-CERT");
+    }
+
+    // 3. Custom `cert = ~/certs/public.pem` inside sunshine.conf + explicit `~/certs/host-cert.pem`
+    let conf_home = tempdir().unwrap();
+    let conf_dir = conf_home.path().join(".config/sds-custom-sunshine");
+    let cert_dir = conf_home.path().join("certs");
+    std::fs::create_dir_all(&conf_dir).unwrap();
+    std::fs::create_dir_all(&cert_dir).unwrap();
+    std::fs::write(cert_dir.join("public.pem"), "CONF-PUBLIC-CERT").unwrap();
+    std::fs::write(cert_dir.join("host-cert.pem"), "EXPLICIT-HOME-CERT").unwrap();
+    std::fs::write(cert_dir.join("cakey.pem"), "SECRET").unwrap();
+    std::fs::write(
+        conf_dir.join("sunshine.conf"),
+        "# comment\npkey = ~/certs/cakey.pem\ncert = ~/../evil.pem\ncert = ~/certs/cakey.pem\ncert = ~/certs/public.pem\n",
+    )
+    .unwrap();
+    for sh in &shells {
+        let out = Command::new(sh)
+            .arg("-c")
+            .arg(&script)
+            .env("HOME", conf_home.path())
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "shell={sh}");
+        assert_eq!(String::from_utf8_lossy(&out.stdout), "CONF-PUBLIC-CERT");
+
+        let explicit_out = Command::new(sh)
+            .arg("-c")
+            .arg(&explicit_home)
+            .env("HOME", conf_home.path())
+            .output()
+            .unwrap();
+        assert!(explicit_out.status.success(), "shell={sh}");
+        assert_eq!(
+            String::from_utf8_lossy(&explicit_out.stdout),
+            "EXPLICIT-HOME-CERT"
+        );
+    }
 }

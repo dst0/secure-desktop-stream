@@ -52,7 +52,7 @@ Post-quantum hardened remote desktop streaming umbrella monorepo combining a sec
 
 ## Quick Start
 
-> **Note on settings:** Runtime streaming preferences (codec, 4:4:4 mode, GPU adapter, encoder, host resolution matching, bitrate, and per-client permissions) live directly in the **Moonlight client** and **Sunshine Web UI** rather than being duplicated in the installer. The installer handles dependency checking/installation, clean builds or verified archive installs, host profiles, firewall scoping, guided PQ pairing, and uninstallation.
+> **Note on settings:** Runtime streaming preferences (codec, 4:4:4 mode, adaptive dirty-tile refinement, host encoder/GPU/capture GPU, host resolution matching, bitrate, and per-PC overrides) live directly in the **Moonlight client** (`<PC> Settings` & `Global Settings` with OS-following Light/Dark theme) and **Sunshine Web UI** rather than being duplicated in the installer. The installer handles dependency checking/installation, clean builds or verified archive installs, host profiles, firewall scoping, guided PQ pairing, and uninstallation.
 
 ### 1. Option A — Install Prebuilt Release (Recommended)
 

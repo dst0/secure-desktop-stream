@@ -389,6 +389,53 @@ fn tls12_provider() -> Arc<CryptoProvider> {
     Arc::new(provider)
 }
 
+/// Wraps an explicit remote `.pem` certificate lookup in a POSIX `sh -c` invocation so
+/// non-POSIX login shells (e.g., `zsh`, `fish`) execute cleanly and expand `~/`.
+pub fn explicit_remote_cert_lookup_script(trimmed: &str) -> String {
+    let inner = if let Some(rest) = trimmed.strip_prefix("~/") {
+        format!(
+            "f=\"$HOME\"/{}; [ -f \"$f\" ] && cat \"$f\" || exit 42",
+            shell_single_quote(rest)
+        )
+    } else {
+        format!(
+            "f={}; [ -f \"$f\" ] && cat \"$f\" || exit 42",
+            shell_single_quote(trimmed)
+        )
+    };
+    format!("sh -c {}", shell_single_quote(&inner))
+}
+
+/// Returns a POSIX `sh -c` command used over SSH to read a host's public Sunshine certificate
+/// (`cacert.pem`, `server.pem`, or `cert = ...` inside `sunshine.conf`, excluding private keys).
+pub fn default_remote_cert_lookup_script() -> String {
+    let inner = concat!(
+        "for f in ",
+        "\"$HOME/.config/sds-host-sunshine/config/sunshine/credentials/cacert.pem\" ",
+        "\"$HOME/.config/sds-\"*\"-sunshine/config/sunshine/credentials/cacert.pem\" ",
+        "\"$HOME/.config/sds-\"*\"-sunshine/server.pem\" ",
+        "\"$HOME/.config/\"*\"-sunshine/config/sunshine/credentials/cacert.pem\" ",
+        "\"$HOME/.config/\"*\"-sunshine/server.pem\" ",
+        "\"$HOME/.config/sunshine/credentials/cacert.pem\" ",
+        "\"/etc/sunshine/cacert.pem\"; ",
+        "do if [ -f \"$f\" ]; then cat \"$f\"; exit 0; fi; done; ",
+        "for conf in \"$HOME/.config/\"*\"-sunshine/sunshine.conf\" \"$HOME/.config/sunshine/sunshine.conf\"; do ",
+        "[ -f \"$conf\" ] || continue; ",
+        "while IFS= read -r line || [ -n \"$line\" ]; do ",
+        "l=$(printf \"%s\" \"$line\" | sed -e \"s/^[[:space:]]*//\"); ",
+        "case \"$l\" in cert[[:space:]]*=*|cert=*) ",
+        "c=${l#*=}; ",
+        "c=$(printf \"%s\" \"$c\" | tr -d \"\\r\" | sed -e \"s/^[[:space:]]*//\" -e \"s/[[:space:]]*$//\"); ",
+        "case \"$c\" in \"~/\"*) c=\"$HOME${c#?}\" ;; esac; ",
+        "case \"$c\" in \"\"|*..*|*cakey.pem) continue ;; *.pem) if [ -f \"$c\" ]; then cat \"$c\"; exit 0; fi ;; esac ",
+        ";; esac; ",
+        "done < \"$conf\"; ",
+        "done; ",
+        "exit 42"
+    );
+    format!("sh -c {}", shell_single_quote(inner))
+}
+
 /// Fetches the public Sunshine `cacert.pem` over SSH (optionally enforcing PQ KEX) and returns SHA-256 hex.
 pub async fn fetch_remote_cert_sha256_via_ssh(
     ssh_target: &str,
@@ -423,40 +470,17 @@ pub async fn fetch_remote_cert_sha256_via_ssh(
             || trimmed.contains('\0')
             || !trimmed.ends_with(".pem")
             || trimmed.contains("..")
+            || trimmed == "~/"
         {
             return Err((
                 SshFingerprintStatus::SshFailed,
                 "invalid remote certificate path".into(),
             ));
         }
-        if let Some(rest) = trimmed.strip_prefix("~/") {
-            if rest.is_empty() {
-                return Err((
-                    SshFingerprintStatus::SshFailed,
-                    "invalid remote certificate path".into(),
-                ));
-            }
-            format!(
-                "f=\"$HOME\"/{}; [ -f \"$f\" ] && cat \"$f\" || exit 42",
-                shell_single_quote(rest)
-            )
-        } else {
-            format!(
-                "f={}; [ -f \"$f\" ] && cat \"$f\" || exit 42",
-                shell_single_quote(trimmed)
-            )
-        }
+        explicit_remote_cert_lookup_script(trimmed)
     } else {
         // Check standard Secure Desktop Stream and Sunshine public cert paths (never cakey.pem).
-        concat!(
-            "for f in ",
-            "\"$HOME/.config/sds-host-sunshine/config/sunshine/credentials/cacert.pem\" ",
-            "\"$HOME/.config/\"*-sunshine/config/sunshine/credentials/cacert.pem ",
-            "\"$HOME/.config/sunshine/credentials/cacert.pem\" ",
-            "/etc/sunshine/cacert.pem; ",
-            "do if [ -f \"$f\" ]; then cat \"$f\"; exit 0; fi; done; exit 42"
-        )
-        .to_string()
+        default_remote_cert_lookup_script()
     };
     args.push(remote_script);
 
