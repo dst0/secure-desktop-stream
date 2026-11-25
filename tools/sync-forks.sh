@@ -8,7 +8,10 @@ cd "$ROOT"
 
 for sub in sunshine moonlight-qt moonlight-common-c; do
     echo "=== Syncing $sub ==="
-    git submodule update --init --remote --recursive "$sub"
+    git submodule update --init --remote "$sub"
+    if [ -f "$sub/.gitmodules" ]; then
+        git -C "$sub" submodule update
+    fi
 done
 
 echo "=== Updated submodule commits ==="
