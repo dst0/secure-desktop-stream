@@ -74,14 +74,16 @@ Facts from the host source (Sunshine v2026.1120.205658):
 `<sdsFeatures>clipboard,files,mic</sdsFeatures>` listing what the host build supports and the
 admin has enabled globally (host: `clipboard` only when a clipboard backend was created,
 `mic` only when the mic module reports a usable sink via `sds::set_mic_available()`; paired
-HTTPS responses additionally advertise `host_encoder`, `host_resolution`, and when enabled/available
-`file_clipboard`, `lazy_clipboard`, `xdnd_drop`; the plain-HTTP `/serverinfo` carries none of
-these elements). Paired HTTPS `/serverinfo` also includes `<sdsEncoders>` (available host
-encoders e.g. `vaapi,software`), `<sdsAdapters>` (enumerated render devices with `<ID>`,
-`<Name>`, `<Default>`), and `<sdsSoftwareCodecModeSupport>` (software encoder codec bitmask so
+HTTPS responses additionally advertise `host_encoder`, `host_capture_adapter`,
+`host_resolution`, and when enabled/available `file_clipboard`, `lazy_clipboard`, `xdnd_drop`;
+the plain-HTTP `/serverinfo` carries none of these elements). Paired HTTPS `/serverinfo` also
+includes `<sdsEncoders>` (available host encoders e.g. `vaapi,software`), `<sdsAdapters>`
+(enumerated render devices with `<ID>`, `<Name>`, `<Vendor>`, `<PciSlot>`, `<Default>`,
+`<CaptureDefault>`), and `<sdsSoftwareCodecModeSupport>` (software encoder codec bitmask so
 clients know YUV 4:4:4 support when overriding to software). `/launch` and `/resume` accept
-paired session override query parameters (`sdsEncoder`, `sdsAdapter`, `sdsHevc`, `sdsMatchRes`,
-`sdsRevertRes`) which apply only for that session and revert cleanly when the stream ends. The
+paired session override query parameters (`sdsEncoder`, `sdsAdapter`, `sdsCaptureAdapter`,
+`sdsHevc`, `sdsMatchRes`, `sdsRevertRes`) which apply only for that session and revert cleanly
+when the stream ends. The
 client only offers features listed there. The authoritative, per-client answer comes from
 `GET /sds/v1/capabilities` (section 4.2).
 
